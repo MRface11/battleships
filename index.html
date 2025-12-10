@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+<meta charset="UTF-8">
+<title>Battleship skelets</title>
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f2f2f2;
+    }
+
+    .container {
+        display: flex;
+        gap: 20px;
+        padding: 20px;
+    }
+
+    /* Kreisā paneļa stils */
+    .left-panel {
+        width: 200px;
+        border: 3px solid black;
+        background: white;
+        padding: 10px;
+    }
+
+    .left-panel h2 {
+        margin-top: 0;
+    }
+
+    .ship-box {
+        width: 100%;
+        height: 30px;
+        border: 1px solid #bbb;
+        margin-bottom: 10px;
+        background: #e6e6e6;
+    }
+
+    /* Vidējais panelis */
+    .middle-panel {
+        flex: 1;
+        border: 3px solid black;
+        background: white;
+        padding: 10px;
+    }
+
+    .timer-box {
+        width: 80px;
+        border: 2px solid black;
+        text-align: center;
+        margin: 0 auto 15px auto;
+        padding: 5px;
+        font-size: 20px;
+        font-weight: bold;
+    }
+
+    .board {
+        display: grid;
+        grid-template-columns: repeat(10, 30px);
+        grid-template-rows: repeat(10, 30px);
+        border: 2px solid black;
+        width: fit-content;
+        margin: 0 auto;
+    }
+
+    .cell {
+        width: 30px;
+        height: 30px;
+        border: 1px solid #333;
+        background: white;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- KREISAIS PANELIS AR KUĢIEM -->
+    <div class="left-panel">
+        <h2>Kuģi:</h2>
+
+        <p>3 - 2x1 kuģi</p>
+        <p>3 - 1x1 kuģi</p>
+        <p>2 - 3x1 kuģi</p>
+        <p>1 - 4x1 kuģis</p>
+
+        <!-- Tukšas kuģu vietas (skices elementi) -->
+        <div class="ship-box"></div>
+        <div class="ship-box"></div>
+        <div class="ship-box"></div>
+        <div class="ship-box"></div>
+        <div class="ship-box"></div>
+        <div class="ship-box"></div>
+    </div>
+
+    <!-- CENTRS: TAIMERIS + LAUKUMS -->
+    <div class="middle-panel">
+
+        <div class="timer-box">100</div>
+
+        <div class="board">
+            <!-- 100 tukši lauciņi (10×10) -->
+            <!-- Visi lauki ir tikai vizuāli -->
+            <!-- NAV nekādu funkciju -->
+            <!-- NAV nekādu klikšķu loģikas -->
+            <!-- NAV leģendas -->
+
+            <!-- Ģenerēti 100 vienādi lauki -->
+            <!-- row 1 -->
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+
+            <!-- row 2 -->
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+
+            <!-- row 3 -->
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+
+            <!-- row 4 -->
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+
+            <!-- row 5 -->
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+
+            <!-- row 6 -->
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+
+            <!-- row 7 -->
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+
+            <!-- row 8 -->
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+
+            <!-- row 9 -->
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+
+            <!-- row 10 -->
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
