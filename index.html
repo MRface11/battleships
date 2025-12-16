@@ -1,155 +1,760 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="lv">
 <head>
-<meta charset="UTF-8">
-<title>Battleship skelets</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Battleship — Kuģu izvietošana (10×10)</title>
+
+<!-- Bootstrap (gaišā tēma) -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
 <style>
-    body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background: #f2f2f2;
-    }
+  :root{
+    --cell-size:36px;
+    --gap:2px;
+    --board-width: calc(var(--cell-size)*10 + var(--gap)*9);
+  }
+  body{
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;
+    margin:18px;
+    color:#222;
+    background:#f5f7fb;
+  }
 
-    .container {
-        display: flex;
-        gap: 20px;
-        padding: 20px;
-    }
+  .panel{
+    background:#fff;
+    border:1px solid #dee2e6;
+    border-radius:.5rem;
+    padding:12px;
+    box-shadow:0 1px 2px rgba(0,0,0,0.03);
+  }
 
-    /* Kreisā paneļa stils */
-    .left-panel {
-        width: 200px;
-        border: 3px solid black;
-        background: white;
-        padding: 10px;
-    }
+  /* Layout */
+  .container-main{ display:flex; gap:18px; align-items:flex-start; }
+  .palette{ width:260px; }
+  .palette h3{ margin:6px 0 12px; font-size:16px; }
 
-    .left-panel h2 {
-        margin-top: 0;
-    }
+  .ship-type{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px;
+    border-radius:6px;
+    cursor:pointer;
+    user-select:none;
+    border:1px solid transparent;
+    margin-bottom:8px;
+    background:linear-gradient(180deg,#fff,#fbfdff);
+  }
+  .ship-type:hover{ background:#f2f7ff; border-color:#d0e0ff; }
+  .ship-type.selected{ background:#e6f2ff; border-color:#7fb3ff; box-shadow:0 0 0 2px rgba(127,179,255,0.08); }
 
-    .ship-box {
-        width: 100%;
-        height: 30px;
-        border: 1px solid #bbb;
-        margin-bottom: 10px;
-        background: #e6e6e6;
-    }
+  .ship-preview{ display:inline-grid; gap:4px; margin-right:6px; }
+  .ship-block{ width:18px;height:18px;background:#e0eefc;border:1px solid #9fc1ff;border-radius:2px; }
+  .ship-count{ margin-left:auto; font-weight:600; }
 
-    /* Vidējais panelis */
-    .middle-panel {
-        flex: 1;
-        border: 3px solid black;
-        background: white;
-        padding: 10px;
-    }
+  .controls{ margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .orient-ind { font-size:20px; margin-left:8px; }
 
-    .timer-box {
-        width: 80px;
-        border: 2px solid black;
-        text-align: center;
-        margin: 0 auto 15px auto;
-        padding: 5px;
-        font-size: 20px;
-        font-weight: bold;
-    }
+  .note{ font-size:13px;color:#555;margin-top:8px; }
 
-    .board {
-        display: grid;
-        grid-template-columns: repeat(10, 30px);
-        grid-template-rows: repeat(10, 30px);
-        border: 2px solid black;
-        width: fit-content;
-        margin: 0 auto;
-    }
+  /* Boards */
+  .boards{ display:flex; gap:18px; align-items:flex-start; }
+  .board-column{ display:flex; flex-direction:column; align-items:center; gap:8px; min-width:var(--board-width); }
+  .board-title{ font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+  .nickname-badge{ font-weight:700; font-size:14px; color:#0d6efd; }
 
-    .cell {
-        width: 30px;
-        height: 30px;
-        border: 1px solid #333;
-        background: white;
-    }
+  .board{
+    width:var(--board-width);
+    display:grid;
+    grid-template-columns: repeat(10, var(--cell-size));
+    grid-template-rows: repeat(10, var(--cell-size));
+    gap: var(--gap);
+    margin: 0 auto;
+    background: #333;
+    padding: var(--gap);
+    border-radius:6px;
+  }
+  .cell{
+    width:var(--cell-size); height:var(--cell-size);
+    background:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; color:#111;
+    cursor:pointer;
+    user-select:none;
+    border-radius:3px;
+    box-sizing:border-box;
+    border:1px solid #d0d0d0;
+    position:relative;
+  }
+  .cell.hover-ok{ outline:3px solid rgba(0,128,0,0.18); }
+  .cell.hover-bad{ outline:3px solid rgba(255,0,0,0.15); }
+  .cell.ship{ background:#7fb3ff; border-color:#4f88ff; }
+  .cell.ship.auto{ background:#aabfdc; } /* not used here */
+  .cell.adjacent{ background:#ffe8e8; } /* optional */
+
+  /* blocked visual: red cross in a corner */
+  .cell.blocked{ background:#fff7f7; }
+  .cell.blocked::after{
+    content: "✖";
+    color: #c33;
+    font-weight:700;
+    position:absolute;
+    top:2px; right:4px;
+    font-size:14px;
+    line-height:1;
+    pointer-events:none;
+    opacity:0.95;
+  }
+
+  .status{ margin-top:12px; font-weight:600; }
+  .legend { font-size:13px; margin-top:10px; color:#444;}
+  .small { font-size:13px; color:#666; margin-top:6px; }
+
+  /* nickname modal */
+  .modal-backdrop{
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background:rgba(0,0,0,0.45); z-index:9999;
+  }
+  .modal-card{
+    width:100%; max-width:420px; background:#fff; padding:18px; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,0.2);
+  }
+
+  /* minimal toast style overrides (to appear centered at top) */
+  #toast-container {
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 12000;
+    pointer-events: none;
+    align-items: center;
+  }
+  .toast-item {
+    pointer-events: auto;
+    min-width: 260px;
+    padding: 10px 14px;
+    background: #fff;
+    border-radius: 8px;
+    border: 2px solid #444;
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    box-shadow: none; /* minimal */
+  }
+
+  /* menu screen (keeps same design style) */
+  .menu-panel { max-width:760px; margin:20px auto; }
+
+  @media (max-width: 900px){
+    .container-main{ flex-direction:column; align-items:center; }
+    .board-column{ min-width: auto; }
+  }
 </style>
 </head>
 <body>
+  <!-- toast container (top center) -->
+  <div id="toast-container" aria-hidden="true"></div>
 
-<div class="container">
-
-    <!-- KREISAIS PANELIS AR KUĢIEM -->
-    <div class="left-panel">
-        <h2>Kuģi:</h2>
-
-        <p>3 - 2x1 kuģi</p>
-        <p>3 - 1x1 kuģi</p>
-        <p>2 - 3x1 kuģi</p>
-        <p>1 - 4x1 kuģis</p>
-
-        <!-- Tukšas kuģu vietas (skices elementi) -->
-        <div class="ship-box"></div>
-        <div class="ship-box"></div>
-        <div class="ship-box"></div>
-        <div class="ship-box"></div>
-        <div class="ship-box"></div>
-        <div class="ship-box"></div>
+  <!-- Nickname modal -->
+  <div id="nickModal" class="modal-backdrop">
+    <div class="modal-card panel text-center">
+      <h4>Ievadi savu vārdu</h4>
+      <input id="nickInput" class="form-control mb-2" placeholder="Tavs vārds" />
+      <div class="d-flex gap-2 justify-content-center">
+        <button id="startBtn" class="btn btn-primary">Sākt</button>
+      </div>
     </div>
+  </div>
 
-    <!-- CENTRS: TAIMERIS + LAUKUMS -->
-    <div class="middle-panel">
-
-        <div class="timer-box">100</div>
-
-        <div class="board">
-            <!-- 100 tukši lauciņi (10×10) -->
-            <!-- Visi lauki ir tikai vizuāli -->
-            <!-- NAV nekādu funkciju -->
-            <!-- NAV nekādu klikšķu loģikas -->
-            <!-- NAV leģendas -->
-
-            <!-- Ģenerēti 100 vienādi lauki -->
-            <!-- row 1 -->
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-
-            <!-- row 2 -->
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-
-            <!-- row 3 -->
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-
-            <!-- row 4 -->
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-
-            <!-- row 5 -->
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-
-            <!-- row 6 -->
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-
-            <!-- row 7 -->
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-
-            <!-- row 8 -->
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-
-            <!-- row 9 -->
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-
-            <!-- row 10 -->
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-            <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-
+  <!-- NEW: Menu screen (pēc vārda ievadīšanas) -->
+  <div id="menuScreen" style="display:none;">
+    <div class="panel menu-panel">
+      <div class="d-flex justify-content-between align-items-center">
+        <h4>Spēlētājs: <span id="menuNameDisplay"></span></h4>
+        <div>
+          <button id="menuChangeName" class="btn btn-sm btn-outline-secondary">Mainīt vārdu</button>
         </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-md-6">
+          <p><strong>Kopā spēles:</strong> <span id="menuTotal">0</span></p>
+          <p><strong>Uzvaras:</strong> <span id="menuWins">0</span></p>
+          <p><strong>Zaudējumi:</strong> <span id="menuLosses">0</span></p>
+        </div>
+        <div class="col-md-6 text-end">
+          <p><strong>Pēdējās spēles (max 5):</strong></p>
+          <div id="menuHistory" style="text-align:left; display:inline-block; min-width:260px;"></div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 justify-content-center mt-3">
+        <button id="menuPlayBtn" class="btn btn-primary">Spēlēt</button>
+        <button id="menuPlayWithPassBtn" class="btn btn-success">Spēlēt ar paroli</button>
+        <button id="menuJoinWithPassBtn" class="btn btn-outline-secondary">Pievienoties ar paroli</button>
+      </div>
+
+      <div class="text-center mt-2 small text-muted">Parole saglabāta lokāli kā pēdējā izveidotā istaba, ja izmanto "Spēlēt ar paroli".</div>
+    </div>
+  </div>
+
+  <!-- Main app (game placement) - design unchanged -->
+  <div id="app" style="display:none;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3 class="m-0">Battleship — Kuģu izvietošana (10×10)</h3>
+      <div id="player-nick-display" class="fw-bold"></div>
     </div>
 
-</div>
+    <div class="container-main">
+      <!-- Palette -->
+      <div class="panel palette">
+        <h3>4. Kuģu komplekts (klasiskā)</h3>
+        <div id="palette"></div>
 
+        <div class="controls">
+          <button id="rotateBtn" class="btn btn-outline-secondary btn-sm">Rotēt (R)</button>
+          <span class="orient-ind" id="orientArrow">➡️</span>
+          <button id="resetBtn" class="btn btn-outline-danger btn-sm">Reset</button>
+        </div>
+
+        <div class="note">
+          <div class="small">Instrukcija: izvēlies kuģi → noklikšķini dēļa lauciņā, lai to novietotu. Kuģi nedrīkst pieskarties (ne sānos, ne diagonāli). Ap izvietotajiem kuģiem tiks parādīts sarkans krustiņš — tur nevar likt citus kuģus.</div>
+        </div>
+      </div>
+
+      <!-- Boards: player (left) and opponent (right) -->
+      <div>
+        <div class="d-flex boards">
+          <!-- Player column -->
+          <div class="panel board-column">
+            <div class="board-title">Tavs dēlis <span id="nickBadge" class="nickname-badge"></span></div>
+            <div id="playerBoard" class="board" aria-label="Player board"></div>
+            <div class="status" id="placementStatus">Orientācija: <span id="orient">H</span> — Izvēlēts: <span id="selInfo">nav</span></div>
+            <div class="legend"></div>
+          </div>
+
+          <!-- Opponent column -->
+          <div class="panel board-column">
+            <div class="board-title">Pretinieka dēlis</div>
+            <div id="opponentBoard" class="board" aria-label="Opponent board"></div>
+            <div class="status"></div>
+            <div class="legend small"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* =========================
+   Toasts
+   ========================= */
+function showToast(type, message) {
+  const colors = { success: "#4CAF50", error: "#D93025", info: "#1976D2", warn: "#E67E22" };
+  const borderColor = colors[type] || "#444";
+  const toast = document.createElement("div");
+  toast.className = "toast-item";
+  toast.style.borderColor = borderColor;
+  toast.innerHTML = `<span style="flex:1; padding-right:10px;">${message}</span>
+                     <button aria-label="Close" style="background:transparent;border:0;font-size:16px;cursor:pointer;">✖</button>`;
+  toast.querySelector("button").addEventListener("click", ()=> toast.remove());
+  document.getElementById("toast-container").appendChild(toast);
+  setTimeout(()=> { if(toast.parentNode) toast.remove(); }, 5000);
+}
+
+/* =========================
+   Local storage helpers
+   ========================= */
+function readJSON(key, fallback){ try{ return JSON.parse(localStorage.getItem(key) || "null") || fallback; } catch(e){ return fallback; } }
+function writeJSON(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+
+/* =========================
+   Stats keys:
+   - battleship_stats: { wins, losses }
+   - battleship_games: [ { result, durationSec, ts } ]
+   - battleship_last_room: { pass }
+   ========================= */
+
+/* =========================
+   Game placement state (unchanged)
+   ========================= */
+const SHIP_TYPES = [
+  { name: 'Battleship', length: 4, count: 1 },
+  { name: 'Cruiser', length: 3, count: 2 },
+  { name: 'Destroyer', length: 2, count: 2 },
+  { name: 'Submarine', length: 1, count: 3 }
+];
+
+const GRID_SIZE = 10;
+let orientation = 'H'; // 'H' or 'V'
+let selectedTypeIndex = null;
+
+const board = Array.from({length: GRID_SIZE}, () => Array(GRID_SIZE).fill(0));
+const ships = {};
+let nextShipId = 1;
+const placedCounts = SHIP_TYPES.map(_ => 0);
+let allPlacedNotified = false;
+
+/* UI refs */
+const nickModal = document.getElementById('nickModal');
+const nickInput = document.getElementById('nickInput');
+const startBtn = document.getElementById('startBtn');
+
+const menuScreen = document.getElementById('menuScreen');
+const menuNameDisplay = document.getElementById('menuNameDisplay');
+const menuTotal = document.getElementById('menuTotal');
+const menuWins = document.getElementById('menuWins');
+const menuLosses = document.getElementById('menuLosses');
+const menuHistory = document.getElementById('menuHistory');
+const menuPlayBtn = document.getElementById('menuPlayBtn');
+const menuPlayWithPassBtn = document.getElementById('menuPlayWithPassBtn');
+const menuJoinWithPassBtn = document.getElementById('menuJoinWithPassBtn');
+const menuChangeName = document.getElementById('menuChangeName');
+
+const app = document.getElementById('app');
+const playerNickDisplay = document.getElementById('player-nick-display');
+const nickBadge = document.getElementById('nickBadge');
+const paletteEl = document.getElementById('palette');
+const playerBoardEl = document.getElementById('playerBoard');
+const opponentBoardEl = document.getElementById('opponentBoard');
+const orientEl = document.getElementById('orient');
+const orientArrowEl = document.getElementById('orientArrow');
+const selInfoEl = document.getElementById('selInfo');
+const rotateBtn = document.getElementById('rotateBtn');
+const resetBtn = document.getElementById('resetBtn');
+const placementStatus = document.getElementById('placementStatus');
+const startPlayVsAiBtn = document.getElementById('playVsAiBtn'); // may be absent in this code (ok)
+
+/* runtime */
+let nickname = '';
+
+/* =========================
+   Start: check if name saved, show modal or menu
+   ========================= */
+function initStart() {
+  const saved = localStorage.getItem('playerName');
+  if(saved){
+    nickModal.style.display = 'none';
+    showMenu(saved);
+  } else {
+    nickModal.style.display = 'flex';
+  }
+}
+
+startBtn.addEventListener('click', ()=> {
+  const v = nickInput.value.trim();
+  if(!v){ showToast('error','Ievadi niknēmu'); return; }
+  localStorage.setItem('playerName', v);
+  nickModal.style.display = 'none';
+  showMenu(v);
+});
+nickInput.addEventListener('keydown', (ev)=> { if(ev.key==='Enter') startBtn.click(); });
+
+menuChangeName.addEventListener('click', ()=> {
+  // remove and reload to show modal
+  localStorage.removeItem('playerName');
+  location.reload();
+});
+
+/* =========================
+   Menu screen logic
+   ========================= */
+function showMenu(name){
+  nickname = name;
+  menuNameDisplay.textContent = name;
+  const stats = readJSON('battleship_stats', { wins:0, losses:0 });
+  const games = readJSON('battleship_games', []);
+  const total = (stats.wins||0) + (stats.losses||0);
+  menuTotal.textContent = total;
+  menuWins.textContent = stats.wins || 0;
+  menuLosses.textContent = stats.losses || 0;
+  // history
+  menuHistory.innerHTML = '';
+  if(games.length === 0) menuHistory.textContent = 'Nav datu';
+  else {
+    const last = games.slice(-5).reverse();
+    const ul = document.createElement('ul');
+    ul.style.paddingLeft = '16px';
+    last.forEach(g => {
+      const d = new Date(g.ts).toLocaleString();
+      const li = document.createElement('li');
+      li.textContent = `${g.result} — ${g.durationSec}s (${d})`;
+      ul.appendChild(li);
+    });
+    menuHistory.appendChild(ul);
+  }
+
+  menuScreen.style.display = 'block';
+  app.style.display = 'none';
+}
+
+/* Menu buttons */
+menuPlayBtn.addEventListener('click', ()=> {
+  // go directly to placement UI
+  menuScreen.style.display = 'none';
+  app.style.display = 'block';
+  playerNickDisplay.textContent = `Spēlētājs: ${nickname}`;
+  nickBadge.textContent = nickname;
+  initUI(); // build boards etc.
+});
+
+menuPlayWithPassBtn.addEventListener('click', ()=> {
+  const pass = prompt("Ievadi paroles kodu (tiks saglabāta lokāli kā pēdējā izveidotā istaba):");
+  if(pass === null) return;
+  const trimmed = String(pass).trim();
+  if(trimmed.length === 0){ showToast('error','Parole nav derīga'); return; }
+  writeJSON('battleship_last_room', { pass: trimmed });
+  showToast('info','Istaba izveidota un saglabāta lokāli.');
+  // then go to placement
+  menuScreen.style.display = 'none';
+  app.style.display = 'block';
+  playerNickDisplay.textContent = `Spēlētājs: ${nickname}`;
+  nickBadge.textContent = nickname;
+  initUI();
+});
+
+menuJoinWithPassBtn.addEventListener('click', ()=> {
+  const pass = prompt("Ievadi paroles kodu, lai pievienotos istabai:");
+  if(pass === null) return;
+  const trimmed = String(pass).trim();
+  if(trimmed.length === 0){ showToast('error','Parole nav derīga'); return; }
+  const last = readJSON('battleship_last_room', null);
+  if(last && last.pass === trimmed){
+    showToast('success','Pievienojies istabai (lokāli).');
+    menuScreen.style.display = 'none';
+    app.style.display = 'block';
+    playerNickDisplay.textContent = `Spēlētājs: ${nickname}`;
+    nickBadge.textContent = nickname;
+    initUI();
+  } else {
+    showToast('error','Lokālā istaba ar tādu paroli netika atrasta.');
+  }
+});
+
+/* =========================
+   Placement UI (kept exactly as in your original code, but click-to-place)
+   ========================= */
+
+function initUI(){
+  renderPalette();
+  renderPlayerBoard();
+  renderOpponentBoard();
+  updateUI();
+}
+
+/* build palette UI */
+function renderPalette(){
+  paletteEl.innerHTML = '';
+  SHIP_TYPES.forEach((t, idx) => {
+    const row = document.createElement('div');
+    row.className = 'ship-type' + (selectedTypeIndex===idx ? ' selected':'');
+
+    row.addEventListener('click', () => {
+      if(placedCounts[idx] >= t.count){
+        showToast('warn', `Visi ${t.count} kuģi no tipa "${t.name}" jau novietoti`);
+        return;
+      }
+      selectedTypeIndex = (selectedTypeIndex===idx) ? null : idx;
+      updateUI();
+    });
+
+    const preview = document.createElement('span');
+    preview.className = 'ship-preview';
+    preview.style.gridAutoFlow = 'column';
+    for(let i=0;i<t.length;i++){
+      const b = document.createElement('span');
+      b.className = 'ship-block';
+      preview.appendChild(b);
+    }
+    const text = document.createElement('span');
+    text.textContent = `${t.name} (${t.length}x)`;
+    text.style.marginLeft='6px';
+
+    const count = document.createElement('span');
+    count.className = 'ship-count';
+    count.textContent = `${placedCounts[idx]}/${t.count}`;
+
+    row.appendChild(preview);
+    row.appendChild(text);
+    row.appendChild(count);
+
+    paletteEl.appendChild(row);
+  });
+}
+
+/* build player board */
+function renderPlayerBoard(){
+  playerBoardEl.innerHTML = '';
+  for(let r=0;r<GRID_SIZE;r++){
+    for(let c=0;c<GRID_SIZE;c++){
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+      cell.title = `${r+1},${c+1}`;
+      cell.addEventListener('click', onPlayerCellClick);
+      cell.addEventListener('mouseover', onCellHover);
+      cell.addEventListener('mouseout', onCellOut);
+      playerBoardEl.appendChild(cell);
+    }
+  }
+  redrawPlayerBoard();
+}
+
+/* build opponent board (empty visuals) */
+function renderOpponentBoard(){
+  opponentBoardEl.innerHTML = '';
+  for(let r=0;r<GRID_SIZE;r++){
+    for(let c=0;c<GRID_SIZE;c++){
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+      cell.title = `${r+1},${c+1}`;
+      opponentBoardEl.appendChild(cell);
+    }
+  }
+}
+
+/* hover preview for placement */
+function onCellHover(e){
+  const r = +e.currentTarget.dataset.r;
+  const c = +e.currentTarget.dataset.c;
+  clearHover();
+  if(selectedTypeIndex===null) return;
+  const len = SHIP_TYPES[selectedTypeIndex].length;
+  const coords = computeCoords(r,c,len,orientation);
+  const ok = canPlace(coords);
+  coords.forEach(p => {
+    const el = getPlayerCellEl(p.r,p.c);
+    if(!el) return;
+    el.classList.add(ok ? 'hover-ok' : 'hover-bad');
+  });
+}
+function onCellOut(e){
+  clearHover();
+}
+function clearHover(){
+  playerBoardEl.querySelectorAll('.cell.hover-ok, .cell.hover-bad').forEach(el => {
+    el.classList.remove('hover-ok','hover-bad');
+  });
+}
+
+/* compute coords for a ship starting at r,c */
+function computeCoords(r,c,len,orientLocal){
+  const coords = [];
+  for(let i=0;i<len;i++){
+    const rr = orientLocal === 'H' ? r : r + i;
+    const cc = orientLocal === 'H' ? c + i : c;
+    coords.push({r: rr, c: cc});
+  }
+  return coords;
+}
+
+/* check bounds, overlap, adjacency */
+function canPlace(coords){
+  for(const p of coords){
+    if(p.r < 0 || p.r >= GRID_SIZE || p.c < 0 || p.c >= GRID_SIZE) return false;
+    if(board[p.r][p.c] !== 0) return false;
+  }
+  for(const p of coords){
+    for(let dr=-1; dr<=1; dr++){
+      for(let dc=-1; dc<=1; dc++){
+        const nr = p.r + dr;
+        const nc = p.c + dc;
+        if(nr<0||nc<0||nr>=GRID_SIZE||nc>=GRID_SIZE) continue;
+        const isPart = coords.some(q => q.r===nr && q.c===nc);
+        if(isPart) continue;
+        if(board[nr][nc] !== 0) return false;
+      }
+    }
+  }
+  return true;
+}
+
+function getPlayerCellEl(r,c){
+  const idx = r*GRID_SIZE + c;
+  return playerBoardEl.children[idx];
+}
+
+/* place ship at coords (typeIndex + starting r,c) */
+function placeShipAtCoords(typeIdx, r, c){
+  if(placedCounts[typeIdx] >= SHIP_TYPES[typeIdx].count){
+    showToast('warn', 'Šī tipa kuģi jau izvietoti');
+    return;
+  }
+  const len = SHIP_TYPES[typeIdx].length;
+  const coords = computeCoords(r,c,len,orientation);
+  if(!canPlace(coords)){
+    showToast('error', 'Nevar novietot kuģi šeit!');
+    return;
+  }
+  const id = nextShipId++;
+  ships[id] = { typeIndex: typeIdx, cells: coords.map(p => ({r:p.r, c:p.c})) };
+  coords.forEach(p => board[p.r][p.c] = id);
+  placedCounts[typeIdx]++;
+  // after placing, mark blocked neighbors visually
+  markBlockedAroundAllShips();
+  // if reached max for this type, deselect
+  if(placedCounts[typeIdx] >= SHIP_TYPES[typeIdx].count) selectedTypeIndex = null;
+  showToast('success', 'Kuģis novietots veiksmīgi!');
+  updateUI();
+}
+
+/* remove ship fully by id */
+function removeShip(shipId){
+  const s = ships[shipId];
+  if(!s) return;
+  s.cells.forEach(p => board[p.r][p.c] = 0);
+  placedCounts[s.typeIndex]--;
+  delete ships[shipId];
+  // recompute blocked visuals
+  markBlockedAroundAllShips();
+  showToast('info', 'Kuģis noņemts');
+}
+
+/* click handler on player cell */
+function onPlayerCellClick(e){
+  const r = +e.currentTarget.dataset.r;
+  const c = +e.currentTarget.dataset.c;
+  const existing = board[r][c];
+  if(existing){
+    // remove entire ship
+    if(confirm('Noņemt šo kuģi?')) {
+      removeShip(existing);
+      selectedTypeIndex = null;
+      updateUI();
+    }
+    return;
+  }
+  // place if a type is selected
+  if(selectedTypeIndex !== null){
+    placeShipAtCoords(selectedTypeIndex, r, c);
+  }
+}
+
+/* mark blocked neighbors (visual) for all ships */
+function markBlockedAroundAllShips(){
+  // first clear blocked class everywhere
+  for(let r=0;r<GRID_SIZE;r++){
+    for(let c=0;c<GRID_SIZE;c++){
+      const el = getPlayerCellEl(r,c);
+      el.classList.remove('blocked','ship');
+    }
+  }
+  // mark ship cells
+  for(const id in ships){
+    const s = ships[id];
+    s.cells.forEach(cell => {
+      const el = getPlayerCellEl(cell.r, cell.c);
+      if(el) el.classList.add('ship');
+    });
+  }
+  // mark neighbors as blocked
+  for(const id in ships){
+    const s = ships[id];
+    s.cells.forEach(cell => {
+      for(let dr=-1; dr<=1; dr++){
+        for(let dc=-1; dc<=1; dc++){
+          const nr = cell.r + dr;
+          const nc = cell.c + dc;
+          if(nr<0||nc<0||nr>=GRID_SIZE||nc>=GRID_SIZE) continue;
+          // skip ship cells themselves
+          const isShipCell = s.cells.some(p => p.r===nr && p.c===nc);
+          if(isShipCell) continue;
+          // only add blocked if empty
+          if(board[nr][nc] === 0){
+            const nel = getPlayerCellEl(nr,nc);
+            if(nel) nel.classList.add('blocked');
+          }
+        }
+      }
+    });
+  }
+}
+
+/* redraw player board visuals (used on init & update) */
+function redrawPlayerBoard(){
+  for(let r=0;r<GRID_SIZE;r++){
+    for(let c=0;c<GRID_SIZE;c++){
+      const el = getPlayerCellEl(r,c);
+      el.className = 'cell';
+      el.textContent = '';
+      if(board[r][c] !== 0) el.classList.add('ship');
+    }
+  }
+  markBlockedAroundAllShips();
+}
+
+/* update UI */
+function updateUI(){
+  renderPalette();
+  redrawPlayerBoard();
+  orientEl.textContent = orientation;
+  orientArrowEl.textContent = orientation === 'H' ? '➡️' : '⬇️';
+  selInfoEl.textContent = selectedTypeIndex===null ? 'nav' : `${SHIP_TYPES[selectedTypeIndex].name} (${SHIP_TYPES[selectedTypeIndex].length})`;
+  // placement status
+  const allPlaced = SHIP_TYPES.every((t,i) => placedCounts[i] === t.count);
+  if(allPlaced){
+    placementStatus.textContent = 'Visi kuģi izvietoti';
+    // make board look locked (grayed) but keep ability to remove on click
+    for(let r=0;r<GRID_SIZE;r++) for(let c=0;c<GRID_SIZE;c++){
+      const el = getPlayerCellEl(r,c);
+      el.classList.add('own-locked');
+    }
+    // also disable dragging from palette
+    paletteEl.querySelectorAll('.ship-type').forEach(el => el.draggable = false);
+    if(!allPlacedNotified){
+      allPlacedNotified = true;
+      showToast('success', 'Visi kuģi veiksmīgi izvietoti!');
+    }
+  } else {
+    const remaining = SHIP_TYPES.reduce((acc,t,i)=> acc + (t.count - placedCounts[i]), 0);
+    placementStatus.textContent = `Izvietošana: atlikušas ${remaining} kuģi`;
+  }
+}
+
+/* keyboard rotate */
+document.addEventListener('keydown', (ev) => {
+  if(ev.key.toLowerCase() === 'r'){
+    orientation = orientation === 'H' ? 'V' : 'H';
+    updateUI();
+  }
+});
+
+/* rotate button */
+rotateBtn.addEventListener('click', ()=> {
+  orientation = orientation === 'H' ? 'V' : 'H';
+  updateUI();
+});
+
+/* reset button */
+resetBtn.addEventListener('click', ()=> {
+  if(!confirm('Vai tiešām atiestatīt dēli?')) return;
+  // clear data
+  for(let r=0;r<GRID_SIZE;r++) for(let c=0;c<GRID_SIZE;c++) board[r][c]=0;
+  for(const k in ships) delete ships[k];
+  nextShipId = 1;
+  for(let i=0;i<placedCounts.length;i++) placedCounts[i]=0;
+  selectedTypeIndex = null;
+  orientation = 'H';
+  allPlacedNotified = false;
+  // re-enable dragging in palette
+  paletteEl.querySelectorAll('.ship-type').forEach(el => el.draggable = true);
+  updateUI();
+  showToast('info', 'Dēlis ir resetots.');
+});
+
+/* initial rendering of opponent board is done in initUI */
+/* start with modal visible; menu shown after name; app shown after Play */
+renderOpponentBoard(); // create opponent board DOM so page looks filled before start
+initStart(); // kick off
+
+</script>
 </body>
 </html>
